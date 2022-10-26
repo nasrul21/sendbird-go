@@ -21,7 +21,7 @@ func (m *mockGetUserUnreadMessages) Call(ctx context.Context, method string, url
 		return args.Get(0).(*errors.Error)
 	}
 
-	result.(*UserUnreadMessages).UnreadCount = 10
+	result.(*UserUnreadMessagesResponse).UnreadCount = 10
 
 	return nil
 }
@@ -38,7 +38,7 @@ func TestGetUserUnreadMessages(t *testing.T) {
 		name         string
 		args         args
 		setupMock    func(m *mockGetUserUnreadMessages)
-		wantExpected UserUnreadMessages
+		wantExpected UserUnreadMessagesResponse
 		wantError    *errors.Error
 	}{
 		{
@@ -52,10 +52,10 @@ func TestGetUserUnreadMessages(t *testing.T) {
 					fmt.Sprintf("/v3/users/%s/unread_message_count", "111001100"),
 					http.Header(nil),
 					nil,
-					&UserUnreadMessages{},
+					&UserUnreadMessagesResponse{},
 				).Return(nil)
 			},
-			wantExpected: UserUnreadMessages{UnreadCount: 10},
+			wantExpected: UserUnreadMessagesResponse{UnreadCount: 10},
 			wantError:    nil,
 		},
 		{
@@ -69,7 +69,7 @@ func TestGetUserUnreadMessages(t *testing.T) {
 					fmt.Sprintf("/v3/users/%s/unread_message_count", "000000000"),
 					http.Header(nil),
 					nil,
-					&UserUnreadMessages{},
+					&UserUnreadMessagesResponse{},
 				).Return(errors.FromHTTPErr(400, []byte(`
 					{
 						"message": "\"User\" not found.",
@@ -78,7 +78,7 @@ func TestGetUserUnreadMessages(t *testing.T) {
 					}
 				`)))
 			},
-			wantExpected: UserUnreadMessages{},
+			wantExpected: UserUnreadMessagesResponse{},
 			wantError: errors.FromHTTPErr(400, []byte(`
 			{
 				"message": "\"User\" not found.",
