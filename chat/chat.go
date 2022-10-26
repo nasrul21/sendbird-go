@@ -8,8 +8,12 @@ import (
 )
 
 type Chat interface {
+	// user
 	GetUserUnreadMessages(ctx context.Context, params UserUnreadMessagesParams) (UserUnreadMessages, *errors.Error)
 	CreateUser(ctx context.Context, request CreateUserRequest) (resp CreateUserResponse, err *errors.Error)
+
+	// channel
+	UpdateGroupChannel(ctx context.Context, params UpdateGroupChannelParams, request UpdateGroupChannelRequest) (resp UpdateGroupChannelResponse, err *errors.Error)
 }
 
 type ChatImpl struct {
