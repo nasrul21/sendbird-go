@@ -9,7 +9,7 @@ import (
 
 type Chat interface {
 	// user
-	GetUserUnreadMessages(ctx context.Context, params UserUnreadMessagesParams) (UserUnreadMessages, *errors.Error)
+	GetUserUnreadMessages(ctx context.Context, params UserUnreadMessagesParams) (UserUnreadMessagesResponse, *errors.Error)
 	GetUserJoinedChannelCount(ctx context.Context, params UserJoinedChannelCountParams) (resp UserJoinedChannelCountResponse, err *errors.Error)
 	CreateUser(ctx context.Context, request CreateUserRequest) (resp CreateUserResponse, err *errors.Error)
 

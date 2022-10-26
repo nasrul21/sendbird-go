@@ -1,6 +1,6 @@
 package chat
 
-type UserUnreadMessages struct {
+type UserUnreadMessagesResponse struct {
 	UnreadCount int `json:"unread_count"`
 }
 
