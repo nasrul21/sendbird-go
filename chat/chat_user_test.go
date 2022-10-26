@@ -97,7 +97,126 @@ func TestGetUserUnreadMessages(t *testing.T) {
 			chatService := New(mockClient)
 
 			resp, err := chatService.GetUserUnreadMessages(tt.args.ctx, tt.args.params)
-			t.Logf("Response: %v, Error: %v", resp, err)
+			assert.Equal(t, tt.wantExpected, resp)
+			assert.Equal(t, tt.wantError, err)
+		})
+	}
+}
+
+type mockCreateUser struct {
+	mock.Mock
+}
+
+func (m *mockCreateUser) Call(ctx context.Context, method string, url string, header http.Header, body interface{}, result interface{}) *errors.Error {
+	args := m.Called(ctx, method, url, header, body, result)
+	if args.Get(0) != nil {
+		return args.Get(0).(*errors.Error)
+	}
+
+	result.(*CreateUserResponse).UserID = "testname"
+	result.(*CreateUserResponse).Nickname = "Test Name"
+	result.(*CreateUserResponse).ProfileURL = "http://profile_url.com/my_profile.png"
+
+	return nil
+}
+
+func TestCreateUser(t *testing.T) {
+	ctx := context.Background()
+
+	type args struct {
+		ctx     context.Context
+		request CreateUserRequest
+	}
+
+	tests := []struct {
+		name         string
+		args         args
+		setupMock    func(m *mockCreateUser)
+		wantExpected CreateUserResponse
+		wantError    *errors.Error
+	}{
+		{
+			name: "success",
+			args: args{
+				ctx: ctx,
+				request: CreateUserRequest{
+					UserID:     "testname",
+					Nickname:   "Test Name",
+					ProfileURL: "http://profile_url.com/my_profile.png",
+				},
+			},
+			setupMock: func(m *mockCreateUser) {
+				m.On(
+					"Call",
+					ctx,
+					http.MethodPost,
+					"/v3/users",
+					http.Header(nil),
+					CreateUserRequest{
+						UserID:     "testname",
+						Nickname:   "Test Name",
+						ProfileURL: "http://profile_url.com/my_profile.png",
+					},
+					&CreateUserResponse{},
+				).Return(nil)
+			},
+			wantExpected: CreateUserResponse{
+				UserID:     "testname",
+				Nickname:   "Test Name",
+				ProfileURL: "http://profile_url.com/my_profile.png",
+			},
+			wantError: nil,
+		},
+		{
+			name: "failed",
+			args: args{
+				ctx: ctx,
+				request: CreateUserRequest{
+					UserID:     "testduplicatename",
+					Nickname:   "Test Duplicate Name",
+					ProfileURL: "http://profile_url.com/my_profile.png",
+				},
+			},
+			setupMock: func(m *mockCreateUser) {
+				m.On(
+					"Call",
+					ctx,
+					http.MethodPost,
+					"/v3/users",
+					http.Header(nil),
+					CreateUserRequest{
+						UserID:     "testduplicatename",
+						Nickname:   "Test Duplicate Name",
+						ProfileURL: "http://profile_url.com/my_profile.png",
+					},
+					&CreateUserResponse{},
+				).Return(errors.FromHTTPErr(400, []byte(`
+				  {
+					"message":"\"user_id\" violates unique constraint.",
+					"code":400202,
+					"error":true
+				  }
+				`)))
+			},
+			wantExpected: CreateUserResponse{},
+			wantError: errors.FromHTTPErr(400, []byte(`
+				{
+					"message":"\"user_id\" violates unique constraint.",
+					"code":400202,
+					"error":true
+				}
+			`)),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockClient := new(mockCreateUser)
+			tt.setupMock(mockClient)
+
+			chatService := New(mockClient)
+
+			resp, err := chatService.CreateUser(tt.args.ctx, tt.args.request)
 			assert.Equal(t, tt.wantExpected, resp)
 			assert.Equal(t, tt.wantError, err)
 		})
