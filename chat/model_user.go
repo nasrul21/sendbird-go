@@ -8,6 +8,14 @@ type UserUnreadMessagesParams struct {
 	UserID string `json:"user_id"`
 }
 
+type UserJoinedChannelCountParams struct {
+	UserID string `json:"user_id"`
+}
+
+type UserJoinedChannelCountResponse struct {
+	GroupChannelCount int `json:"group_channel_count"`
+}
+
 type CreateUserRequest struct {
 	UserID           string            `json:"user_id"`
 	Nickname         string            `json:"nickname"`

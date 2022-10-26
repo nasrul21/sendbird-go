@@ -222,3 +222,93 @@ func TestCreateUser(t *testing.T) {
 		})
 	}
 }
+
+type mockGetUserJoinedChannelCount struct {
+	mock.Mock
+}
+
+func (m *mockGetUserJoinedChannelCount) Call(ctx context.Context, method string, url string, header http.Header, body interface{}, result interface{}) *errors.Error {
+	args := m.Called(ctx, method, url, header, body, result)
+	if args.Get(0) != nil {
+		return args.Get(0).(*errors.Error)
+	}
+	result.(*UserJoinedChannelCountResponse).GroupChannelCount = 5
+	return nil
+}
+
+func TestGetUserJoinedChannelCount(t *testing.T) {
+	ctx := context.Background()
+
+	type args struct {
+		ctx    context.Context
+		params UserJoinedChannelCountParams
+	}
+
+	tests := []struct {
+		name         string
+		args         args
+		setupMock    func(m *mockGetUserJoinedChannelCount)
+		wantExpected UserJoinedChannelCountResponse
+		wantError    *errors.Error
+	}{
+		{
+			name: "success",
+			args: args{ctx: ctx, params: UserJoinedChannelCountParams{UserID: "111001100"}},
+			setupMock: func(m *mockGetUserJoinedChannelCount) {
+				m.On(
+					"Call",
+					ctx,
+					http.MethodGet,
+					fmt.Sprintf("/v3/users/%s/group_channel_count", "111001100"),
+					http.Header(nil),
+					nil,
+					&UserJoinedChannelCountResponse{},
+				).Return(nil)
+			},
+			wantExpected: UserJoinedChannelCountResponse{GroupChannelCount: 5},
+			wantError:    nil,
+		},
+		{
+			name: "failed user not found",
+			args: args{ctx: ctx, params: UserJoinedChannelCountParams{UserID: "000000000"}},
+			setupMock: func(m *mockGetUserJoinedChannelCount) {
+				m.On(
+					"Call",
+					ctx,
+					http.MethodGet,
+					fmt.Sprintf("/v3/users/%s/group_channel_count", "000000000"),
+					http.Header(nil),
+					nil,
+					&UserJoinedChannelCountResponse{},
+				).Return(errors.FromHTTPErr(400, []byte(`
+					{
+						"message": "\"User\" not found.",
+						"code": 400201,
+						"error": true
+					}
+				`)))
+			},
+			wantExpected: UserJoinedChannelCountResponse{},
+			wantError: errors.FromHTTPErr(400, []byte(`
+			{
+				"message": "\"User\" not found.",
+				"code": 400201,
+				"error": true
+			}
+		`)),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockClient := new(mockGetUserJoinedChannelCount)
+			tt.setupMock(mockClient)
+
+			chatService := New(mockClient)
+
+			resp, err := chatService.GetUserJoinedChannelCount(tt.args.ctx, tt.args.params)
+			assert.Equal(t, tt.wantExpected, resp)
+			assert.Equal(t, tt.wantError, err)
+		})
+	}
+}

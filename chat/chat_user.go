@@ -25,3 +25,12 @@ func (c *ChatImpl) GetUserUnreadMessages(ctx context.Context, params UserUnreadM
 	}
 	return
 }
+
+func (c *ChatImpl) GetUserJoinedChannelCount(ctx context.Context, params UserJoinedChannelCountParams) (resp UserJoinedChannelCountResponse, err *errors.Error) {
+	url := fmt.Sprintf("/v3/users/%s/group_channel_count", params.UserID)
+	err = c.Client.Call(ctx, http.MethodGet, url, nil, nil, &resp)
+	if err != nil {
+		return
+	}
+	return
+}
